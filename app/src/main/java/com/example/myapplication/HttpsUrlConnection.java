@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -15,9 +16,13 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 public class HttpsUrlConnection {
@@ -26,7 +31,7 @@ public class HttpsUrlConnection {
     public static void reqeustConnection(Context context, String url) {
         try {
 
-//            SSLSocketFactory sslSocketFactory = socketFactory(context).getSocketFactory();
+            SSLSocketFactory sslSocketFactory = socketFactory(context).getSocketFactory();
 
             // Create a URL object for the target server
             URL mUrl = new URL(url);
@@ -62,6 +67,57 @@ public class HttpsUrlConnection {
         }
     }
 
+    public static void printSubjectAlternativeNames(Context context) {
+        try {
+            // Load certificate from res/raw/server.crt
+            Resources res = context.getResources();
+            InputStream is = res.openRawResource(R.raw.ca); // "server" is the filename (without .crt extension)
+
+            // Generate X509Certificate instance
+            CertificateFactory cf = CertificateFactory.getInstance("X.509");
+            Certificate certificate = cf.generateCertificate(is);
+            is.close();
+
+            X509Certificate x509Cert = (X509Certificate) certificate;
+
+            // Retrieve SAN (Subject Alternative Names)
+            Collection<List<?>> sanCollection = x509Cert.getSubjectAlternativeNames();
+
+            if (sanCollection == null) {
+                Log.d("SAN", "No Subject Alternative Names found.");
+                return;
+            }
+
+            // Iterate over SAN entries and print
+            for (List<?> sanItem : sanCollection) {
+                Integer sanType = (Integer) sanItem.get(0);
+                Object sanValue = sanItem.get(1);
+
+                String sanTypeName = "";
+                switch (sanType) {
+                    case 0:
+                        sanTypeName = "Other Name";
+                        break;
+                    case 1:
+                        sanTypeName = "RFC822 Name (Email)";
+                        break;
+                    case 2:
+                        sanTypeName = "DNS Name";
+                        break;
+                    case 7:
+                        sanTypeName = "IP Address";
+                        break;
+                    default:
+                        sanTypeName = "Type (" + sanType + ")";
+                }
+
+                Log.d("SAN", sanTypeName + ": " + sanValue);
+            }
+        } catch (Exception e) {
+            Log.e("SAN", "Error retrieving SAN: ", e);
+        }
+    }
+
     private static SSLContext socketFactory(Context context) {
         try {
             // Load the certificate from the assets folder
@@ -73,6 +129,8 @@ public class HttpsUrlConnection {
             } finally {
                 caInput.close();
             }
+
+            printSubjectAlternativeNames(context);
 
             // Create a KeyStore containing our trusted CA
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
