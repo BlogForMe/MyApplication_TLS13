@@ -14,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -35,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Greeting(context: Context, name: String, modifier: Modifier = Modifier) {
-    Column   {
+    Column {
         Button(onClick = {
             OkHttpSelfSignedDemo.makeRequest(context)
         }) {
@@ -50,6 +52,19 @@ fun Greeting(context: Context, name: String, modifier: Modifier = Modifier) {
 
             Text(
                 text = "Hello OKHTTP CA $name!",
+                modifier = modifier
+            )
+        }
+        Button(onClick = {
+//            val url  = "https://tls13.1d.pw/"
+            val url  ="https://realmjon.mynetgear.com:8443/hello"
+            Executors.newCachedThreadPool().execute {
+                HttpsUrlConnection.reqeustConnection(context,url)
+            }
+        }) {
+
+            Text(
+                text = "Https Url Connection",
                 modifier = modifier
             )
         }
