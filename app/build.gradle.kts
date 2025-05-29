@@ -18,16 +18,6 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -38,6 +28,40 @@ android {
     buildFeatures {
         compose = true
     }
+
+    // Configure signing configs - single config for both build types
+    signingConfigs {
+        create("shared") {
+            storeFile = file("../tls.keystore")
+            storePassword = "666666"
+            keyAlias = "apptls"
+            keyPassword = "666666"
+        }
+    }
+
+    buildTypes {
+        debug {
+            isDebuggable = true
+            isMinifyEnabled = false
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-DEBUG"
+            // Use the shared keystore
+            signingConfig = signingConfigs.getByName("shared")
+        }
+
+        release {
+            isDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            // Use the shared keystore
+            signingConfig = signingConfigs.getByName("shared")
+        }
+    }
+
 }
 
 dependencies {
