@@ -19,3 +19,7 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Scenario B: Keep Entire Class
+
+-keep class com.example.myapplication.keep.TestClass { *; }
