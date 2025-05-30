@@ -8,6 +8,12 @@ android {
     namespace = "com.example.myapplication"
     compileSdk = 35
 
+    println("=== ProGuard File Information ===")
+    val optimizeFile = getDefaultProguardFile("proguard-android-optimize.txt")
+    println("Optimize file: ${optimizeFile.absolutePath}")
+
+
+
     defaultConfig {
         applicationId = "com.example.myapplication"
         minSdk = 24
@@ -41,18 +47,19 @@ android {
 
     buildTypes {
         debug {
-            isDebuggable = true
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-DEBUG"
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             // Use the shared keystore
             signingConfig = signingConfigs.getByName("shared")
         }
 
         release {
-            isDebuggable = false
             isMinifyEnabled = true
-            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -77,6 +84,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.activity)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -85,3 +95,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
