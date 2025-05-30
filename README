@@ -1,0 +1,46 @@
+2. Test Scenarios
+Scenario A: No Custom Rules (Baseline)
+bash# Comment out all -keep rules in proguard-rules.pro
+./gradlew assembleRelease
+Check mapping.txt:
+com.example.keepdemo.test.TestClass -> a:
+    java.lang.String publicField -> a
+    java.lang.String publicMethod() -> b
+# UnusedClass might be completely removed
+Scenario B: Keep Entire Class
+proguard# Uncomment in proguard-rules.pro:
+-keep class com.example.keepdemo.test.TestClass {
+    *;
+}
+Expected mapping.txt:
+com.example.keepdemo.test.TestClass -> com.example.keepdemo.test.TestClass:
+    java.lang.String publicField -> publicField
+    java.lang.String publicMethod() -> publicMethod
+Scenario C: Keep Class Name Only
+proguard-keep class com.example.keepdemo.test.TestClass
+Expected mapping.txt:
+com.example.keepdemo.test.TestClass -> com.example.keepdemo.test.TestClass:
+    java.lang.String publicField -> a
+    java.lang.String publicMethod() -> b
+Scenario D: Keep Specific Members
+proguard-keep class com.example.keepdemo.test.TestClass {
+    public java.lang.String publicMethod();
+}
+Expected mapping.txt:
+com.example.keepdemo.test.TestClass -> a:
+    java.lang.String publicField -> a
+    java.lang.String publicMethod() -> publicMethod  # Kept!
+3. Test Reflection
+
+Run the app and click "Test Reflection"
+If class/methods are obfuscated, reflection will fail
+If kept properly, reflection will succeed
+
+4. Compare Results
+
+Build with different -keep rules
+Compare mapping.txt files
+See what gets preserved vs obfuscated
+Test reflection behavior
+
+This simple demo clearly shows how -keep rules preserve classes and members while allowing you to see the direct impact on obfuscation.
