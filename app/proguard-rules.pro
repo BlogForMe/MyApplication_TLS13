@@ -26,9 +26,25 @@
 
 # Scenario C: Keep Class Name Only
 
--keep class com.example.myapplication.keep.TestClass
+#-keep class com.example.myapplication.keep.User
 
 # Scenario D: Keep Specific Members
 #-keep class com.example.myapplication.keep.TestClass{
 #    public java.lang.String publicMethod();
 #}
+
+
+
+## -keepclassmembers
+## 1. Keep Getter Methods
+#-keepclassmembers class * {
+#    public *** get*();
+#}
+
+
+#-keepclassmembers class * {
+##    <fields>;
+#    <init>(...);
+#}
+
+

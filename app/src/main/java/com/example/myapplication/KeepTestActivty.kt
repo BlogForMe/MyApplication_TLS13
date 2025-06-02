@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.keep.TestClass
+import com.example.myapplication.keep.User
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
 class KeepTestActivty : ComponentActivity() {
@@ -36,11 +37,16 @@ class KeepTestActivty : ComponentActivity() {
         // Remove direct usage, use only reflection
         try {
             val clazz = Class.forName("com.example.myapplication.keep.TestClass")
+            val user = Class.forName("com.example.myapplication.keep.User")
             val instance = clazz.getDeclaredConstructor().newInstance()
+            val instance1 = user.getDeclaredConstructor().newInstance()
             // This will break if TestClass gets obfuscated!
         } catch (e: Exception) {
             Log.e("Test", "Reflection failed: ${e.message}")
         }
+
+//        User("name",1)
+
         setContent {
             MyApplicationTheme {
                 Surface(
