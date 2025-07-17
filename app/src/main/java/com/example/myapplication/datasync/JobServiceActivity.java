@@ -1,20 +1,27 @@
 package com.example.myapplication.datasync;
 
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
+import android.Manifest;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.example.myapplication.R;
@@ -26,6 +33,10 @@ public class JobServiceActivity extends AppCompatActivity {
     private TextView statusText;
     private ScrollView scrollView;
     private StringBuilder statusLog = new StringBuilder();
+
+    private boolean notificationPermissionGranted;
+
+    private static final int NOTIFICATION_PERMISSION_REQUEST_CODE = 1001;
 
     private BroadcastReceiver statusReceiver = new BroadcastReceiver() {
         @Override
@@ -40,9 +51,9 @@ public class JobServiceActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_job_service);
-
-        createNotificationChannel();
         initViews();
+
+        checkInitialPermissions();
         setupButtons();
         registerStatusReceiver();
 
@@ -55,6 +66,18 @@ public class JobServiceActivity extends AppCompatActivity {
     private void initViews() {
         statusText = findViewById(R.id.statusText);
         scrollView = findViewById(R.id.scrollView);
+    }
+
+    private void checkInitialPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ requires runtime notification permission
+            checkNotificationPermission();
+        } else {
+            // Pre-Android 13: No notification permission required
+            boolean notificationPermissionGranted = true;
+            updateStatus("✅ Android < 13: Notification permission not required");
+            enableServiceButtons();
+        }
     }
 
     private void setupButtons() {
@@ -191,18 +214,225 @@ public class JobServiceActivity extends AppCompatActivity {
         LocalBroadcastManager.getInstance(this).registerReceiver(statusReceiver, filter);
     }
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Data Sync Channel",
-                    NotificationManager.IMPORTANCE_DEFAULT
-            );
-            channel.setDescription("Channel for data sync notifications");
 
-            NotificationManager manager = getSystemService(NotificationManager.class);
-            manager.createNotificationChannel(channel);
+
+    private void checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            boolean hasPermission = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+
+            notificationPermissionGranted = hasPermission;
+
+            if (hasPermission) {
+                updateStatus("✅ Notification permission granted");
+                enableServiceButtons();
+            } else {
+                updateStatus("❌ Notification permission not granted");
+                updateStatus("⚠️ Foreground services require notification permission!");
+                disableServiceButtons();
+
+                // Auto-request permission on first launch
+                requestNotificationPermission();
+            }
         }
+    }
+
+    private void requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                // Check if we should show permission rationale
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.POST_NOTIFICATIONS)) {
+
+                    // Show explanation dialog
+                    showPermissionRationaleDialog();
+                } else {
+                    // Request permission directly
+                    updateStatus("Requesting notification permission...");
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            NOTIFICATION_PERMISSION_REQUEST_CODE);
+                }
+            } else {
+                // Permission already granted
+                notificationPermissionGranted = true;
+                updateStatus("✅ Notification permission already granted");
+                enableServiceButtons();
+            }
+        }
+    }
+
+    private void showPermissionRationaleDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Notification Permission Required")
+                .setMessage("This app needs notification permission to run foreground services for data synchronization.\n\n" +
+                        "Without this permission:\n" +
+                        "• Foreground services cannot start\n" +
+                        "• Data sync will fail\n" +
+                        "• App functionality will be limited")
+                .setPositiveButton("Grant Permission", (dialog, which) -> {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                            NOTIFICATION_PERMISSION_REQUEST_CODE);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    updateStatus("❌ Permission denied by user");
+                    disableServiceButtons();
+                    showPermissionDeniedOptions();
+                })
+                .setCancelable(false)
+                .show();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == NOTIFICATION_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission granted
+                notificationPermissionGranted = true;
+                updateStatus("✅ Notification permission granted successfully!");
+                enableServiceButtons();
+
+                Toast.makeText(this, "Permission granted! Foreground services can now start",
+                        Toast.LENGTH_LONG).show();
+
+            } else {
+                // Permission denied
+                notificationPermissionGranted = false;
+                updateStatus("❌ Notification permission denied");
+                disableServiceButtons();
+
+                // Check if user selected "Don't ask again"
+                if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.POST_NOTIFICATIONS)) {
+                    updateStatus("⚠️ Permission permanently denied - manual action required");
+                    showPermissionPermanentlyDeniedDialog();
+                } else {
+                    showPermissionDeniedOptions();
+                }
+            }
+        }
+    }
+
+    private void showPermissionDeniedOptions() {
+        new AlertDialog.Builder(this)
+                .setTitle("Permission Required")
+                .setMessage("Notification permission is required for foreground services.\n\n" +
+                        "What would you like to do?")
+                .setPositiveButton("Retry", (dialog, which) -> requestNotificationPermission())
+                .setNegativeButton("Go to Settings", (dialog, which) -> openAppSettings())
+                .setNeutralButton("Continue Without", (dialog, which) -> {
+                    updateStatus("⚠️ Continuing without permission - limited functionality");
+                })
+                .show();
+    }
+
+    private void showPermissionPermanentlyDeniedDialog() {
+        new AlertDialog.Builder(this)
+                .setTitle("Permission Required")
+                .setMessage("Notification permission has been permanently denied.\n\n" +
+                        "To enable foreground services:\n" +
+                        "1. Go to App Settings\n" +
+                        "2. Tap Permissions\n" +
+                        "3. Enable Notifications")
+                .setPositiveButton("Open Settings", (dialog, which) -> openAppSettings())
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    updateStatus("❌ Manual permission grant required in Settings");
+                })
+                .show();
+    }
+
+    private void openAppSettings() {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
+
+        updateStatus("Opening app settings - please enable notifications");
+    }
+
+    // ===================================================================
+    // PERMISSION CHECKING AND VALIDATION
+    // ===================================================================
+
+    private void checkAllPermissions() {
+        updateStatus("\n=== PERMISSION STATUS CHECK ===");
+
+        // Check notification permission (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            boolean hasNotificationPerm = ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED;
+            updateStatus("POST_NOTIFICATIONS: " + (hasNotificationPerm ? "✅ Granted" : "❌ Denied"));
+            notificationPermissionGranted = hasNotificationPerm;
+
+            if (!hasNotificationPerm) {
+                updateStatus("⚠️ Foreground services require notification permission!");
+            }
+        } else {
+            updateStatus("POST_NOTIFICATIONS: ✅ Not required (Android < 13)");
+            notificationPermissionGranted = true;
+        }
+
+        // Check other foreground service permissions
+        String[] otherPermissions = {
+                Manifest.permission.FOREGROUND_SERVICE,
+                Manifest.permission.FOREGROUND_SERVICE_DATA_SYNC,
+                Manifest.permission.INTERNET,
+                Manifest.permission.WAKE_LOCK
+        };
+
+        for (String permission : otherPermissions) {
+            boolean hasPermission = ContextCompat.checkSelfPermission(this, permission)
+                    == PackageManager.PERMISSION_GRANTED;
+            String permName = permission.substring(permission.lastIndexOf('.') + 1);
+            updateStatus(permName + ": " + (hasPermission ? "✅ Granted" : "❌ Denied"));
+        }
+
+        // Update button states based on permissions
+        if (notificationPermissionGranted) {
+            enableServiceButtons();
+        } else {
+            disableServiceButtons();
+        }
+
+        updateStatus("Permission check complete\n");
+    }
+
+    private boolean validatePermissionsBeforeService() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationPermissionGranted) {
+            updateStatus("❌ Cannot start foreground service: Notification permission required");
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Permission Required")
+                    .setMessage("Notification permission is required to start foreground services.")
+                    .setPositiveButton("Grant Permission", (dialog, which) -> requestNotificationPermission())
+                    .setNegativeButton("Cancel", null)
+                    .show();
+
+            return false;
+        }
+        return true;
+    }
+
+    // ===================================================================
+    // UI STATE MANAGEMENT
+    // ===================================================================
+
+    private void enableServiceButtons() {
+//        startServiceBtn.setEnabled(true);
+//        startServiceBtn.setText("Start Foreground Service");
+//        startServiceBtn.setAlpha(1.0f);
+    }
+
+    private void disableServiceButtons() {
+//        startServiceBtn.setEnabled(false);
+//        startServiceBtn.setText("Service Disabled (No Permission)");
+//        startServiceBtn.setAlpha(0.5f);
     }
 
     @Override

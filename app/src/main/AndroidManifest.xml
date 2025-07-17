@@ -26,7 +26,7 @@
         tools:targetApi="31">
         <activity
             android:name=".KeepTestActivty"
-            android:exported="true" >
+            android:exported="true">
 
         </activity>
         <activity
@@ -37,7 +37,8 @@
 
         </activity>
 
-        <activity android:name=".datasync.JobServiceActivity"
+        <activity
+            android:name=".datasync.JobServiceActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -48,14 +49,17 @@
 
 
         <!-- JobIntentService - CRITICAL: Must have BIND_JOB_SERVICE permission -->
-        <service android:name=".datasync.DataSyncJobIntentService"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false" />
+        <service
+            android:name=".datasync.DataSyncJobIntentService"
+            android:exported="true"
+            android:process=":tools"
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <!-- DataSync Foreground Service for Android 15 timeout testing -->
-        <service android:name=".datasync.DataSyncForegroundService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+        <service
+            android:name=".datasync.DataSyncForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
     </application>
 
 </manifest>
