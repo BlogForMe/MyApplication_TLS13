@@ -2,4 +2,18 @@
 <resources>
 
     <style name="Theme.MyApplication" parent="Theme.AppCompat.DayNight" />
+
+    <!-- Theme for Problematic Activity -->
+    <style name="Theme.ProblematicApp" parent="android:Theme.Material.Light.DarkActionBar">
+        <!-- Default theme - will cause issues with edge-to-edge -->
+    </style>
+
+    <!-- Theme for Fixed Activity -->
+    <style name="Theme.FixedApp" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Transparent system bars -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <!-- Enable edge-to-edge for cutout devices -->
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
 </resources>

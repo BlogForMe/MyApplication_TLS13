@@ -22,7 +22,6 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.MyApplication"
         tools:targetApi="31">
         <activity
             android:name=".KeepTestActivty"
@@ -32,19 +31,18 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
-            android:theme="@style/Theme.MyApplication">
-
-        </activity>
-
-        <activity
-            android:name=".datasync.JobServiceActivity"
-            android:exported="true">
+            android:label="@string/app_name">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".datasync.JobServiceActivity"
+            android:exported="true">
+
         </activity>
 
 
@@ -60,6 +58,29 @@
             android:name=".datasync.DataSyncForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
+
+        <!-- Problematic Activity -->
+        <activity
+            android:name=".edge.ProblematicActivity"
+            android:theme="@style/Theme.ProblematicApp"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Fixed Activity -->
+        <activity
+            android:name=".edge.FixedActivity"
+            android:theme="@style/Theme.FixedApp"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>
